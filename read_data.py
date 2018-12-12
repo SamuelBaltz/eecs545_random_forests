@@ -16,6 +16,9 @@ cars = cars.replace('high',3)
 cars = cars.replace('med',2)
 cars = cars.replace('low',1)
     #numeric variables
+cars = cars.replace('4',4)
+cars = cars.replace('3',3)
+cars = cars.replace('2',2)
 cars = cars.replace('5more',5)
 cars = cars.replace('more',5)
     #lug_boot and safety variable
@@ -30,3 +33,4 @@ cars = cars.replace('unacc',1)
 #Rewrite the pandas dataframe as a numpy array so that we can treat it the same
     #way we've been treating other datasets throughout this semester
 cars = cars.values
+
