@@ -116,3 +116,15 @@ def sample_with_replacement(data):
     while len(sample) < len(cars_train):
         sample.append(cars_train[numpy.random.randint(0,len(cars_train)),:])
     return sample
+
+def check_prediction(y, predicted_y):
+    """
+    Check the accuracy of a predicted y column against the real y values
+    """
+    accurate = 0
+    num_y = len(y)
+    for i in range(0,num_y):
+        if predicted_y[i] == y[i]:
+            accurate += 1
+    true_prop = float(accurate) / float(num_y)
+    return true_prop
