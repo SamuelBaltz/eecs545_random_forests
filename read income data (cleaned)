@@ -8,7 +8,7 @@ for col in cols:
 cols.remove("high_income")
 
 #  shuffle, split into training and testing set
-cars = cars.reindex(np.random.permutation(cars.index)).iloc[:1700,:]
-train_max_row = math.floor(cars.shape[0] * .8)
-cars_train = cars.iloc[:train_max_row]
-cars_test = cars.iloc[train_max_row:]
+income = income.reindex(np.random.permutation(income.index)).iloc[:1700,:]
+train_max_row = math.floor(income.shape[0] * .8)
+income_train = income.iloc[:train_max_row]
+income_test = income.iloc[train_max_row:]
