@@ -1,3 +1,6 @@
+# read in data
+income = pd.read_csv("income.csv")
+
 # convert categorical variable to numerical variable
 cols = ['education', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 'native_country', 'high_income']
 for col in cols:
