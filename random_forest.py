@@ -161,14 +161,12 @@ def check_prediction(y, predicted_y):
     """
     Check the accuracy of a predicted y column against the real y values
     """
-    accurate = 0
-    num_y = len(y)
+    accurate = np.zeros((len(y),1))
     y_array = np.array(y)
-    for i in range(0,num_y):
+    for i in range(len(accurate)):
         if predicted_y[i] == y_array[i]:
-            accurate += 1
-    true_prop = float(accurate) / float(num_y)
-    return true_prop
+            accurate[i] = 1
+    return accurate
 
 #Run the model
 def grow_forest(train_data,test_data,NTREES,bias_checking):
@@ -226,6 +224,7 @@ def grow_forest(train_data,test_data,NTREES,bias_checking):
 
 def correct_bias(predicted_y,sample_list,unsampled_list,train_data):
     accurate = check_prediction(train_data['y'],predicted_y)
+
     return accurate
 
 if BIAS_CHECKING:
@@ -235,7 +234,7 @@ if BIAS_CHECKING:
 
 if not BIAS_CHECKING:
     predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
-    print(check_prediction(cars_test['y'],predicted_y))
+    print(float(sum(check_prediction(cars_test['y'],predicted_y))) / float(len(cars_test)))
 
 
 
