@@ -69,12 +69,12 @@ cars_test = cars[NTRAIN:len(cars)]
 def generate_tree(training_data):
     global NSTATE
     global NLEAF
-    global DEPTH
     global COLNAMES
-    tree1 = DecisionTreeClassifier(random_state=NSTATE,min_samples_leaf=NLEAF)
-    tree1.fit(training_data[COLNAMES], training_data['y'])
-    tree2 = DecisionTreeClassifier(random_state=NSTATE,max_depth=DEPTH)
-    tree2.fit(training_data[COLNAMES], training_data['y'])
+    tree = DecisionTreeClassifier(random_state=NSTATE,min_samples_leaf=NLEAF,  \
+                                     splitter = 'random', max_features = 'auto')
+    tree.fit(training_data[COLNAMES], training_data["y"])
+    return tree
+
 
 def predict(data):
     global COLNAMES
@@ -166,7 +166,7 @@ for i in range(NTREES):
     bag = cars_train.sample(frac=BAG_PROP, replace=True, random_state=i)
     
     # Fit a decision tree model to the "bag"
-    clf = DecisionTreeClassifier(random_state=1, min_samples_leaf=2, splitter = 'random', max_features = 'auto')
+    clf = generate_tree(cars_train)
     clf.fit(bag[COLNAMES], bag["high_income"])
     
     # Using the model, make predictions on the test data
