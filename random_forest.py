@@ -13,6 +13,8 @@ NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
 DEPTH = 5
 NLEAF = 2
+NTREES = 10
+BAG_PROP = .6
 
 #set the random seed
 numpy.random.seed(SEED)
@@ -76,7 +78,9 @@ def generate_tree(training_data):
 
 def predict(data):
     global COLNAMES
-    prediction = clf.predict(data[COLNAMES])
+    prediction = tree1.predict(data[COLNAMES])
+
+
 
 def calc_entropy(column):
     """
@@ -151,3 +155,22 @@ def check_prediction(y, predicted_y):
             accurate += 1
     true_prop = float(accurate) / float(num_y)
     return true_prop
+
+
+#Run the model
+predictions = []
+for i in range(NTREES):
+    # We select 60% of the rows from train, sampling with replacement
+    # We set a random state to ensure we'll be able to replicate our results
+    # We set it to i instead of a fixed value so we don't get the same sample every time
+    bag = cars_train.sample(frac=BAG_PROP, replace=True, random_state=i)
+    
+    # Fit a decision tree model to the "bag"
+    clf = DecisionTreeClassifier(random_state=1, min_samples_leaf=2, splitter = 'random', max_features = 'auto')
+    clf.fit(bag[COLNAMES], bag["high_income"])
+    
+    # Using the model, make predictions on the test data
+    predictions.append(clf.predict_proba(cars_test[COLNAMES])[:,1])
+
+combined = numpy.sum(predictions, axis=0) / 10
+rounded = numpy.round(combined)
