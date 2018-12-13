@@ -155,8 +155,9 @@ def check_prediction(y, predicted_y):
     """
     accurate = 0
     num_y = len(y)
+    y_array = numpy.array(y)
     for i in range(0,num_y):
-        if predicted_y[i] == y[i]:
+        if predicted_y[i] == y_array[i]:
             accurate += 1
     true_prop = float(accurate) / float(num_y)
     return true_prop
@@ -180,5 +181,6 @@ for i in range(NTREES):
 combined = numpy.sum(predictions, axis=0) / float(NTREES)
 rounded = numpy.round(combined)
 
-mse = sum((rounded - cars_test['y'])**2)/float(len(cars_test['y']))
-print mse
+print(check_prediction(cars_test['y'],rounded))
+
+#mse = sum((rounded - cars_test['y'])**2)/float(len(cars_test['y']))
