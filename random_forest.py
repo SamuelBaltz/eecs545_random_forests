@@ -7,13 +7,13 @@ from sklearn.metrics import roc_auc_score
 
 
 #Initialize constants
-TRAIN_PROP = .2
+TRAIN_PROP = .3
 SEED = 545
 NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
 DEPTH = 5
 NLEAF = 2
-NTREES = 10
+NTREES = 1000
 BAG_PROP = .6
 
 #set the random seed
@@ -71,19 +71,19 @@ cars_test = cars.iloc[train_max_row:]
 #cars_train = cars[0:NTRAIN]
 #cars_test = cars[NTRAIN:len(cars)]
 
-def generate_tree(training_data):
+def generate_tree(bag):
     global NSTATE
     global NLEAF
     global COLNAMES
     tree = DecisionTreeClassifier(random_state=NSTATE,min_samples_leaf=NLEAF,  \
                                      splitter = 'random', max_features = 'auto')
-    tree.fit(training_data[COLNAMES], training_data["y"])
+    tree.fit(bag[COLNAMES], bag["y"])
     return tree
 
 
 def predict(data):
     global COLNAMES
-    prediction = tree1.predict(data[COLNAMES])
+    prediction = tree.predict(data[COLNAMES])
 
 
 
@@ -145,9 +145,9 @@ def sample_with_replacement(data,i):
     Create a sample with replacement for the bootstrap aggregation process
     """
     global BAG_PROP
-    sample = pd.DataFrame.sample(data,n=int(len(data)*BAG_PROP),   \
+    bag = pd.DataFrame.sample(data,n=int(len(data)*BAG_PROP),   \
                                                    replace=True, random_state=i)
-    return sample
+    return bag
 
 def check_prediction(y, predicted_y):
     """
@@ -165,13 +165,13 @@ def check_prediction(y, predicted_y):
 #Run the model
 predictions = []
 for i in range(NTREES):
-    # We select 60% of the rows from train, sampling with replacement
+    # We select BAG_PROP of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
     # We set it to i instead of a fixed value so we don't get the same sample every time
     bag = sample_with_replacement(cars_train,i)
     
     # Fit a decision tree model to the "bag"
-    tree = generate_tree(cars_train)
+    tree = generate_tree(bag)
     tree.fit(bag[COLNAMES], bag["y"])
     
     # Using the model, make predictions on the test data
