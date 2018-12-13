@@ -162,32 +162,40 @@ def check_prediction(y, predicted_y):
     true_prop = float(accurate) / float(num_y)
     return true_prop
 
+#def correct_bias(cars_train):
+    
 
 #Run the model
-votes = np.zeros((len(cars_test),4))
-for i in range(NTREES):
+def grow_forest(train_data,test_data, NTREES):
+    global COLNAMES
+    votes = np.zeros((len(test_data),4))
+    for i in range(NTREES):
     # We select BAG_PROP of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
     # We set it to i instead of a fixed value so we don't get the same sample every time
-    bag = sample_with_replacement(cars_train,i)
+        bag = sample_with_replacement(train_data,i)
     
-    # Fit a decision tree model to the "bag"
-    tree = generate_tree(bag)
-    tree.fit(bag[COLNAMES], bag["y"])
+        # Fit a decision tree model to the "bag"
+        tree = generate_tree(bag)
+        tree.fit(bag[COLNAMES], bag["y"])
     
-    # Using the model, make predictions on the test data
-    probabilities = tree.predict_proba(cars_test[COLNAMES])
-    prob1 = probabilities[:,0]
-    prob2 = probabilities[:,1]
-    prob3 = probabilities[:,2]
-    prob4 = probabilities[:,3]
-    for j in range(0,len(votes)):
-        row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
-        votes[j,np.argmax(row_probs)] += 1
+        # Using the model, make predictions on the test data
+        probabilities = tree.predict_proba(test_data[COLNAMES])
+        prob1 = probabilities[:,0]
+        prob2 = probabilities[:,1]
+        prob3 = probabilities[:,2]
+        prob4 = probabilities[:,3]
+        for j in range(0,len(votes)):
+            row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
+            votes[j,np.argmax(row_probs)] += 1
 
-predicted_y = []
-for i in range(0,len(votes)):
-    predicted_y.append(np.argmax(votes[i]) + 1)
+    predicted_y = []
+    for i in range(0,len(votes)):
+        predicted_y.append(np.argmax(votes[i]) + 1)
+
+    return predicted_y
+
+predicted_y = grow_forest(cars_train,cars_test,NTREES)
 
 combined = np.sum(predicted_y, axis=0) / float(NTREES)
 rounded = np.round(combined)
