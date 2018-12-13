@@ -15,6 +15,8 @@ DEPTH = 5
 NLEAF = 2
 NTREES = 100
 BAG_PROP = .6
+NCORRECTS = 3
+BIAS_CHECKING = False
 
 #set the random seed
 np.random.seed(SEED)
@@ -140,14 +142,20 @@ def find_best_column(data, target_name, columns):
     best_index = information_gains.index(max(information_gains))
     return columns[best_index]
 
-def sample_with_replacement(data,i):
+def sample_with_replacement(data,i,bias_checking):
     """
     Create a sample with replacement for the bootstrap aggregation process
     """
     global BAG_PROP
     bag = pd.DataFrame.sample(data,n=int(len(data)*BAG_PROP),   \
                                                    replace=True, random_state=i)
-    return bag
+    sample_indices = list(bag.index)
+        
+    if not bias_checking:
+        return bag
+
+    if bias_checking:
+        return(bag,sample_indices)
 
 def check_prediction(y, predicted_y):
     """
@@ -160,45 +168,68 @@ def check_prediction(y, predicted_y):
         if predicted_y[i] == y_array[i]:
             accurate += 1
     true_prop = float(accurate) / float(num_y)
-    return true_prop
-
-#def correct_bias(cars_train):
-    
+    return true_prop    
 
 #Run the model
-def grow_forest(train_data,test_data, NTREES):
+def grow_forest(train_data,test_data, NTREES,bias_checking):
     global COLNAMES
     votes = np.zeros((len(test_data),4))
+    if bias_checking:
+        mse = np.zeros((len(test_data),2))
+
     for i in range(NTREES):
     # We select BAG_PROP of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
     # We set it to i instead of a fixed value so we don't get the same sample every time
-        bag = sample_with_replacement(train_data,i)
-    
+        if not bias_checking:
+            bag = sample_with_replacement(train_data,i,bias_checking)
+        if bias_checking:
+            (bag,sample_list) = sample_with_replacement(train_data,i,bias_checking)
+            
+        
         # Fit a decision tree model to the "bag"
         tree = generate_tree(bag)
         tree.fit(bag[COLNAMES], bag["y"])
-    
-        # Using the model, make predictions on the test data
-        probabilities = tree.predict_proba(test_data[COLNAMES])
-        prob1 = probabilities[:,0]
-        prob2 = probabilities[:,1]
-        prob3 = probabilities[:,2]
-        prob4 = probabilities[:,3]
-        for j in range(0,len(votes)):
-            row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
-            votes[j,np.argmax(row_probs)] += 1
+
+        if bias_checking:
+            in_tree = np.zeros((len(train_data),1))
+            for j in range(len(train_data)):
+                if train_data.index[j] in sample_list:
+                    in_tree[j] = 1
+
+        if not bias_checking:
+            # Using the model, make predictions on the test data
+            probabilities = tree.predict_proba(test_data[COLNAMES])
+            prob1 = probabilities[:,0]
+            prob2 = probabilities[:,1]
+            prob3 = probabilities[:,2]
+            prob4 = probabilities[:,3]
+            for j in range(0,len(votes)):
+                row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
+                votes[j,np.argmax(row_probs)] += 1
 
     predicted_y = []
     for i in range(0,len(votes)):
         predicted_y.append(np.argmax(votes[i]) + 1)
 
-    return predicted_y
+    if bias_checking:
+        return predicted_y
+    if not bias_checking:
+        return predicted_y
 
-predicted_y = grow_forest(cars_train,cars_test,NTREES)
 
-combined = np.sum(predicted_y, axis=0) / float(NTREES)
-rounded = np.round(combined)
+#def correct_bias(cars_train):
+#    global NCORRECTS
+#    predicted_y = 
+
+if BIAS_CHECKING:
+    predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+
+if not BIAS_CHECKING:
+    predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+
+#combined = np.sum(predicted_y, axis=0) / float(NTREES)
+#rounded = np.round(combined)
 
 print(check_prediction(cars_test['y'],predicted_y))
 
