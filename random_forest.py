@@ -167,7 +167,7 @@ for i in range(NTREES):
     
     # Fit a decision tree model to the "bag"
     clf = generate_tree(cars_train)
-    clf.fit(bag[COLNAMES], bag["high_income"])
+    clf.fit(bag[COLNAMES], bag["y"])
     
     # Using the model, make predictions on the test data
     predictions.append(clf.predict_proba(cars_test[COLNAMES])[:,1])
