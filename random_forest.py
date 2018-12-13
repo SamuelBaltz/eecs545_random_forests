@@ -7,7 +7,7 @@ from sklearn.metrics import roc_auc_score
 
 
 #Initialize constants
-NTRAIN = 150
+TRAIN_PROP = .2
 SEED = 545
 NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
@@ -62,8 +62,8 @@ if NPARRAY == 1:
     #The original dataset is sorted by the value of the first column, so we
     # need to shuffle the order of the rows of the array or else our training
     # data will only contain specific values of one variable
-cars = cars.reindex(np.random.permutation(cars.index))
-train_max_row = math.floor(cars.shape[0] * .2)
+cars = cars.reindex(numpy.random.permutation(cars.index))
+train_max_row = int(math.floor(cars.shape[0] * TRAIN_PROP))
 cars_train = cars.iloc[:train_max_row]
 cars_test = cars.iloc[train_max_row:]
 #numpy.random.shuffle(cars)
@@ -139,14 +139,13 @@ def find_best_column(data, target_name, columns):
     best_index = information_gains.index(max(information_gains))
     return columns[best_index]
 
-def sample_with_replacement(data):
+def sample_with_replacement(data,i):
     """
     Create a sample with replacement for the bootstrap aggregation process
     """
     global BAG_PROP
-    sample = []
-    while len(sample) < round(len(data) * BAG_PROP):
-        sample.append(data[numpy.random.randint(0,len(data)),:])
+    sample = pd.DataFrame.sample(cars_train,n=int(len(cars_train)*BAG_PROP),   \
+                                                   replace=True, random_state=i)
     return sample
 
 def check_prediction(y, predicted_y):
@@ -168,7 +167,7 @@ for i in range(NTREES):
     # We select 60% of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
     # We set it to i instead of a fixed value so we don't get the same sample every time
-    bag = sample_with_replacement(cars_train)
+    bag = sample_with_replacement(cars_train,i)
     
     # Fit a decision tree model to the "bag"
     tree = generate_tree(cars_train)
