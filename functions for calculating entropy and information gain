@@ -1,4 +1,59 @@
+#Import libraries
+import pandas as pd
 import numpy
+import math
+
+
+#Initialize constants
+NTRAIN = 150
+SEED = 545
+
+#set the random seed
+numpy.random.seed(SEED)
+
+
+#Import data
+cars = pd.read_csv('car.csv')
+
+#Reshape data into a numeric array
+#Replace car text data cells as follows:
+    #buying and maint variables
+        #vhigh -> 3
+        #high -> 2
+        #med -> 1
+        #low -> 0
+cars = cars.replace('vhigh',4)
+cars = cars.replace('high',3)
+cars = cars.replace('med',2)
+cars = cars.replace('low',1)
+    #numeric variables
+cars = cars.replace('4',4)
+cars = cars.replace('3',3)
+cars = cars.replace('2',2)
+cars = cars.replace('5more',5)
+cars = cars.replace('more',5)
+    #lug_boot and safety variable
+cars = cars.replace('big',3)
+cars = cars.replace('small',1)
+    #y variable
+cars = cars.replace('vgood',4)
+cars = cars.replace('good',3)
+cars = cars.replace('acc',2)
+cars = cars.replace('unacc',1)
+
+
+#Rewrite the pandas dataframe as a numpy array so that we can treat it the same
+    #way we've been treating other datasets throughout this semester
+cars = cars.values
+
+#Split into training and test data
+    #The original dataset is sorted by the value of the first column, so we
+    # need to shuffle the order of the rows of the array or else our training
+    # data will only contain specific values of one variable
+numpy.random.shuffle(cars)
+cars_train = cars[0:NTRAIN]
+cars_test = cars[NTRAIN:len(cars)]
+
 
 def calc_entropy(column):
     """
@@ -7,7 +62,7 @@ def calc_entropy(column):
     # Compute the counts of each unique value in the column
     counts = numpy.bincount(column)
     # Divide by the total column length to get a probability
-    probabilities = counts / len(column)
+    probabilities = counts / float(len(column))
     
     # Initialize the entropy to 0
     entropy = 0
@@ -27,7 +82,7 @@ def calc_information_gain(data, split_name, target_name):
     
     # Find the median of the column we're splitting
     column = data[split_name]
-    median = column.median()
+    median = numpy.median(column)
     
     # Make two subsets of the data, based on the median
     left_split = data[column <= median]
