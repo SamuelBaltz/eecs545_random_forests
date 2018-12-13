@@ -1,0 +1,11 @@
+# convert categorical variable to numerical variable
+cols = ['education', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 'native_country', 'high_income']
+for col in cols:
+    income[col] = pd.Categorical(income[col]).codes
+cols.remove("high_income")
+
+#  shuffle, split into training and testing set
+cars = cars.reindex(np.random.permutation(cars.index)).iloc[:1700,:]
+train_max_row = math.floor(cars.shape[0] * .8)
+cars_train = cars.iloc[:train_max_row]
+cars_test = cars.iloc[train_max_row:]
