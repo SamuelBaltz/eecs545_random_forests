@@ -187,11 +187,11 @@ for i in range(NTREES):
 
 predicted_y = []
 for i in range(0,len(votes)):
-    predicted_y.append(numpy.argmax(votes[i]))
+    predicted_y.append(numpy.argmax(votes[i]) + 1)
 
 combined = numpy.sum(predicted_y, axis=0) / float(NTREES)
 rounded = numpy.round(combined)
 
-print(check_prediction(cars_test['y'],rounded))
+print(check_prediction(cars_test['y'],predicted_y))
 
 #mse = sum((rounded - cars_test['y'])**2)/float(len(cars_test['y']))
