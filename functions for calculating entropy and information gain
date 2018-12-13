@@ -7,6 +7,7 @@ import math
 #Initialize constants
 NTRAIN = 150
 SEED = 545
+NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 
 #set the random seed
 numpy.random.seed(SEED)
@@ -42,9 +43,11 @@ cars = cars.replace('acc',2)
 cars = cars.replace('unacc',1)
 
 
-#Rewrite the pandas dataframe as a numpy array so that we can treat it the same
-    #way we've been treating other datasets throughout this semester
-cars = cars.values
+#If NPARRAY = 1, rewrite the pandas dataframe as a numpy array so that we can
+    # treat it the same way we've been treating other datasets throughout this
+    # semester
+if NPARRAY == 1:
+    cars = cars.values
 
 #Split into training and test data
     #The original dataset is sorted by the value of the first column, so we
