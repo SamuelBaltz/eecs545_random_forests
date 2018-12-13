@@ -139,9 +139,10 @@ def sample_with_replacement(data):
     """
     Create a sample with replacement for the bootstrap aggregation process
     """
+    global BAG_PROP
     sample = []
-    while len(sample) < len(cars_train):
-        sample.append(cars_train[numpy.random.randint(0,len(cars_train)),:])
+    while len(sample) < round(len(data) * BAG_PROP):
+        sample.append(data[numpy.random.randint(0,len(data)),:])
     return sample
 
 def check_prediction(y, predicted_y):
@@ -163,14 +164,14 @@ for i in range(NTREES):
     # We select 60% of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
     # We set it to i instead of a fixed value so we don't get the same sample every time
-    bag = cars_train.sample(frac=BAG_PROP, replace=True, random_state=i)
+    bag = sample_with_replacement(cars_train)
     
     # Fit a decision tree model to the "bag"
-    clf = generate_tree(cars_train)
-    clf.fit(bag[COLNAMES], bag["y"])
+    tree = generate_tree(cars_train)
+    tree.fit(bag[COLNAMES], bag["y"])
     
     # Using the model, make predictions on the test data
-    predictions.append(clf.predict_proba(cars_test[COLNAMES])[:,1])
+    predictions.append(tree.predict_proba(cars_test[COLNAMES])[:,1])
 
-combined = numpy.sum(predictions, axis=0) / 10
+combined = numpy.sum(predictions, axis=0) / float(NTREES)
 rounded = numpy.round(combined)
