@@ -1,13 +1,13 @@
 #Import libraries
 import pandas as pd
-import numpy
+import numpy as np
 import math
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import roc_auc_score
 
 
 #Initialize constants
-TRAIN_PROP = .3
+TRAIN_PROP = .4
 SEED = 545
 NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
@@ -17,7 +17,7 @@ NTREES = 100
 BAG_PROP = .6
 
 #set the random seed
-numpy.random.seed(SEED)
+np.random.seed(SEED)
 
 
 #Import data
@@ -53,7 +53,7 @@ cars = cars.replace('acc',2)
 cars = cars.replace('unacc',1)
 
 
-#If NPARRAY = 1, rewrite the pandas dataframe as a numpy array so that we can
+#If NPARRAY = 1, rewrite the pandas dataframe as a np array so that we can
     # treat it the same way we've been treating other datasets throughout this
     # semester
 if NPARRAY == 1:
@@ -63,11 +63,11 @@ if NPARRAY == 1:
     #The original dataset is sorted by the value of the first column, so we
     # need to shuffle the order of the rows of the array or else our training
     # data will only contain specific values of one variable
-cars = cars.reindex(numpy.random.permutation(cars.index))
+cars = cars.reindex(np.random.permutation(cars.index))
 train_max_row = int(math.floor(cars.shape[0] * TRAIN_PROP))
 cars_train = cars.iloc[:train_max_row]
 cars_test = cars.iloc[train_max_row:]
-#numpy.random.shuffle(cars)
+#np.random.shuffle(cars)
 #cars_train = cars[0:NTRAIN]
 #cars_test = cars[NTRAIN:len(cars)]
 
@@ -89,10 +89,10 @@ def predict(data):
 
 def calc_entropy(column):
     """
-    Calculate entropy given a pandas series, list, or numpy array.
+    Calculate entropy given a pandas series, list, or np array.
     """
     # Compute the counts of each unique value in the column
-    counts = numpy.bincount(column)
+    counts = np.bincount(column)
     # Divide by the total column length to get a probability
     probabilities = counts / float(len(column))
     
@@ -114,7 +114,7 @@ def calc_information_gain(data, split_name, target_name):
     
     # Find the median of the column we're splitting
     column = data[split_name]
-    median = numpy.median(column)
+    median = np.median(column)
     
     # Make two subsets of the data, based on the median
     left_split = data[column <= median]
@@ -155,7 +155,7 @@ def check_prediction(y, predicted_y):
     """
     accurate = 0
     num_y = len(y)
-    y_array = numpy.array(y)
+    y_array = np.array(y)
     for i in range(0,num_y):
         if predicted_y[i] == y_array[i]:
             accurate += 1
@@ -164,7 +164,7 @@ def check_prediction(y, predicted_y):
 
 
 #Run the model
-votes = numpy.zeros((len(cars_test),4))
+votes = np.zeros((len(cars_test),4))
 for i in range(NTREES):
     # We select BAG_PROP of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
@@ -183,14 +183,14 @@ for i in range(NTREES):
     prob4 = probabilities[:,3]
     for j in range(0,len(votes)):
         row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
-        votes[j,numpy.argmax(row_probs)] += 1
+        votes[j,np.argmax(row_probs)] += 1
 
 predicted_y = []
 for i in range(0,len(votes)):
-    predicted_y.append(numpy.argmax(votes[i]) + 1)
+    predicted_y.append(np.argmax(votes[i]) + 1)
 
-combined = numpy.sum(predicted_y, axis=0) / float(NTREES)
-rounded = numpy.round(combined)
+combined = np.sum(predicted_y, axis=0) / float(NTREES)
+rounded = np.round(combined)
 
 print(check_prediction(cars_test['y'],predicted_y))
 
