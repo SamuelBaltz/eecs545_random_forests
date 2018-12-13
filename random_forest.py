@@ -7,16 +7,16 @@ from sklearn.metrics import roc_auc_score
 
 
 #Initialize constants
-TRAIN_PROP = .4
+TRAIN_PROP = .2
 SEED = 545
 NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
 DEPTH = 5
 NLEAF = 2
-NTREES = 100
+NTREES = 10
 BAG_PROP = .6
 NCORRECTS = 3
-BIAS_CHECKING = False
+BIAS_CHECKING = True
 
 #set the random seed
 np.random.seed(SEED)
@@ -168,14 +168,16 @@ def check_prediction(y, predicted_y):
         if predicted_y[i] == y_array[i]:
             accurate += 1
     true_prop = float(accurate) / float(num_y)
-    return true_prop    
+    return true_prop
 
 #Run the model
-def grow_forest(train_data,test_data, NTREES,bias_checking):
+def grow_forest(train_data,test_data,NTREES,bias_checking):
     global COLNAMES
-    votes = np.zeros((len(test_data),4))
+
     if bias_checking:
-        mse = np.zeros((len(test_data),2))
+        votes = np.zeros((len(train_data),4))
+    if not bias_checking:
+        votes = np.zeros((len(test_data),4))
 
     for i in range(NTREES):
     # We select BAG_PROP of the rows from train, sampling with replacement
@@ -185,17 +187,22 @@ def grow_forest(train_data,test_data, NTREES,bias_checking):
             bag = sample_with_replacement(train_data,i,bias_checking)
         if bias_checking:
             (bag,sample_list) = sample_with_replacement(train_data,i,bias_checking)
-            
+            unsampled_list = np.setdiff1d(train_data.index,sample_list)
         
         # Fit a decision tree model to the "bag"
         tree = generate_tree(bag)
         tree.fit(bag[COLNAMES], bag["y"])
 
         if bias_checking:
-            in_tree = np.zeros((len(train_data),1))
-            for j in range(len(train_data)):
-                if train_data.index[j] in sample_list:
-                    in_tree[j] = 1
+            # Using the model, make predictions on the training data
+            probabilities = tree.predict_proba(train_data[COLNAMES])
+            prob1 = probabilities[:,0]
+            prob2 = probabilities[:,1]
+            prob3 = probabilities[:,2]
+            prob4 = probabilities[:,3]
+            for j in range(0,len(votes)):
+                row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
+                votes[j,np.argmax(row_probs)] += 1
 
         if not bias_checking:
             # Using the model, make predictions on the test data
@@ -213,24 +220,26 @@ def grow_forest(train_data,test_data, NTREES,bias_checking):
         predicted_y.append(np.argmax(votes[i]) + 1)
 
     if bias_checking:
-        return predicted_y
+        return (predicted_y,sample_list,unsampled_list)
     if not bias_checking:
         return predicted_y
 
-
-#def correct_bias(cars_train):
-#    global NCORRECTS
-#    predicted_y = 
+def correct_bias(predicted_y,sample_list,unsampled_list,train_data):
+    accurate = check_prediction(train_data['y'],predicted_y)
+    return accurate
 
 if BIAS_CHECKING:
-    predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+    (predicted_y,sample_list,unsampled_list) = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+    accurate = correct_bias(predicted_y,unsampled_list,sample_list,cars_train)
+    print accurate
 
 if not BIAS_CHECKING:
     predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+    print(check_prediction(cars_test['y'],predicted_y))
+
+
+
 
 #combined = np.sum(predicted_y, axis=0) / float(NTREES)
 #rounded = np.round(combined)
-
-print(check_prediction(cars_test['y'],predicted_y))
-
 #mse = sum((rounded - cars_test['y'])**2)/float(len(cars_test['y']))
