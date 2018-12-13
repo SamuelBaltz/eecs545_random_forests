@@ -13,7 +13,7 @@ NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
 DEPTH = 5
 NLEAF = 2
-NTREES = 1000
+NTREES = 100
 BAG_PROP = .6
 
 #set the random seed
@@ -164,7 +164,7 @@ def check_prediction(y, predicted_y):
 
 
 #Run the model
-predictions = []
+votes = numpy.zeros((len(cars_test),4))
 for i in range(NTREES):
     # We select BAG_PROP of the rows from train, sampling with replacement
     # We set a random state to ensure we'll be able to replicate our results
@@ -176,9 +176,20 @@ for i in range(NTREES):
     tree.fit(bag[COLNAMES], bag["y"])
     
     # Using the model, make predictions on the test data
-    predictions.append(tree.predict_proba(cars_test[COLNAMES])[:,1])
+    probabilities = tree.predict_proba(cars_test[COLNAMES])
+    prob1 = probabilities[:,0]
+    prob2 = probabilities[:,1]
+    prob3 = probabilities[:,2]
+    prob4 = probabilities[:,3]
+    for j in range(0,len(votes)):
+        row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
+        votes[j,numpy.argmax(row_probs)] += 1
 
-combined = numpy.sum(predictions, axis=0) / float(NTREES)
+predicted_y = []
+for i in range(0,len(votes)):
+    predicted_y.append(numpy.argmax(votes[i]))
+
+combined = numpy.sum(predicted_y, axis=0) / float(NTREES)
 rounded = numpy.round(combined)
 
 print(check_prediction(cars_test['y'],rounded))
