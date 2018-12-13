@@ -62,9 +62,13 @@ if NPARRAY == 1:
     #The original dataset is sorted by the value of the first column, so we
     # need to shuffle the order of the rows of the array or else our training
     # data will only contain specific values of one variable
-numpy.random.shuffle(cars)
-cars_train = cars[0:NTRAIN]
-cars_test = cars[NTRAIN:len(cars)]
+cars = cars.reindex(np.random.permutation(cars.index))
+train_max_row = math.floor(cars.shape[0] * .2)
+cars_train = cars.iloc[:train_max_row]
+cars_test = cars.iloc[train_max_row:]
+#numpy.random.shuffle(cars)
+#cars_train = cars[0:NTRAIN]
+#cars_test = cars[NTRAIN:len(cars)]
 
 def generate_tree(training_data):
     global NSTATE
