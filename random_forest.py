@@ -145,7 +145,7 @@ def sample_with_replacement(data,i):
     Create a sample with replacement for the bootstrap aggregation process
     """
     global BAG_PROP
-    sample = pd.DataFrame.sample(cars_train,n=int(len(cars_train)*BAG_PROP),   \
+    sample = pd.DataFrame.sample(data,n=int(len(data)*BAG_PROP),   \
                                                    replace=True, random_state=i)
     return sample
 
@@ -179,3 +179,6 @@ for i in range(NTREES):
 
 combined = numpy.sum(predictions, axis=0) / float(NTREES)
 rounded = numpy.round(combined)
+
+mse = sum((rounded - cars_test['y'])**2)/float(len(cars_test['y']))
+print mse
