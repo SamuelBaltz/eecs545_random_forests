@@ -24,6 +24,7 @@ numpy.random.seed(SEED)
 cars = pd.read_csv('car.csv')
 
 COLNAMES = list(cars.columns.values)    #Save column names to a list
+COLNAMES.remove('y')
 
 #Reshape data into a numeric array
 #Replace car text data cells as follows:
