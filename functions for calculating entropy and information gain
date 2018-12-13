@@ -97,7 +97,7 @@ def calc_information_gain(data, split_name, target_name):
     # Return information gain
     return original_entropy - to_subtract
  
- def find_best_column(data, target_name, columns):
+def find_best_column(data, target_name, columns):
     # Fill in the logic here to automatically find the column in columns to split on
     # data is a dataframe
     # target_name is the name of the target variable
@@ -107,3 +107,12 @@ def calc_information_gain(data, split_name, target_name):
         information_gains.append(calc_information_gain(data, col, target_name))
     best_index = information_gains.index(max(information_gains))
     return columns[best_index]
+
+def sample_with_replacement(data):
+    """
+    Create a sample with replacement for the bootstrap aggregation process
+    """
+    sample = []
+    while len(sample) < len(cars_train):
+        sample.append(cars_train[numpy.random.randint(0,len(cars_train)),:])
+    return sample
