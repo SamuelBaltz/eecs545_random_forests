@@ -3,75 +3,97 @@ import pandas as pd
 import numpy as np
 import math
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import roc_auc_score
 
 
 #Initialize constants
-TRAIN_PROP = .2
+TRAIN_PROP = .3
 SEED = 545
 NPARRAY = 0     #1 if the data should be an array; 0 if pandas df
 NSTATE = 1
 DEPTH = 5
 NLEAF = 2
-NTREES = 10
+NTREES = 100
 BAG_PROP = .6
 NCORRECTS = 3
-BIAS_CHECKING = True
+BIAS_CHECKING = False
+DATASET = 'cars'
 
 #set the random seed
 np.random.seed(SEED)
 
 
 #Import data
-cars = pd.read_csv('car.csv')
+if DATASET == 'cars':
+    cars = pd.read_csv('car.csv')
 
-COLNAMES = list(cars.columns.values)    #Save column names to a list
-COLNAMES.remove('y')
+    COLNAMES = list(cars.columns.values)    #Save column names to a list
+    COLNAMES.remove('y')
 
-#Reshape data into a numeric array
-#Replace car text data cells as follows:
-    #buying and maint variables
-        #vhigh -> 4
-        #high -> 3
-        #med -> 2
-        #low -> 1
-cars = cars.replace('vhigh',4)
-cars = cars.replace('high',3)
-cars = cars.replace('med',2)
-cars = cars.replace('low',1)
-    #numeric variables
-cars = cars.replace('4',4)
-cars = cars.replace('3',3)
-cars = cars.replace('2',2)
-cars = cars.replace('5more',5)
-cars = cars.replace('more',5)
-    #lug_boot and safety variable
-cars = cars.replace('big',3)
-cars = cars.replace('small',1)
-    #y variable
-cars = cars.replace('vgood',4)
-cars = cars.replace('good',3)
-cars = cars.replace('acc',2)
-cars = cars.replace('unacc',1)
+    #Reshape data into a numeric array
+    #Replace car text data cells as follows:
+        #buying and maint variables
+            #vhigh -> 4
+            #high -> 3
+            #med -> 2
+            #low -> 1
+    cars = cars.replace('vhigh',4)
+    cars = cars.replace('high',3)
+    cars = cars.replace('med',2)
+    cars = cars.replace('low',1)
+        #numeric variables
+    cars = cars.replace('4',4)
+    cars = cars.replace('3',3)
+    cars = cars.replace('2',2)
+    cars = cars.replace('5more',5)
+    cars = cars.replace('more',5)
+        #lug_boot and safety variable
+    cars = cars.replace('big',3)
+    cars = cars.replace('small',1)
+        #y variable
+    cars = cars.replace('vgood',3)
+    cars = cars.replace('good',2)
+    cars = cars.replace('acc',1)
+    cars = cars.replace('unacc',0)
 
 
-#If NPARRAY = 1, rewrite the pandas dataframe as a np array so that we can
-    # treat it the same way we've been treating other datasets throughout this
-    # semester
-if NPARRAY == 1:
-    cars = cars.values
+    #If NPARRAY = 1, rewrite the pandas dataframe as a np array so that we can
+        # treat it the same way we've been treating other datasets throughout this
+        # semester
+    if NPARRAY == 1:
+        cars = cars.values
 
-#Split into training and test data
-    #The original dataset is sorted by the value of the first column, so we
-    # need to shuffle the order of the rows of the array or else our training
-    # data will only contain specific values of one variable
-cars = cars.reindex(np.random.permutation(cars.index))
-train_max_row = int(math.floor(cars.shape[0] * TRAIN_PROP))
-cars_train = cars.iloc[:train_max_row]
-cars_test = cars.iloc[train_max_row:]
-#np.random.shuffle(cars)
-#cars_train = cars[0:NTRAIN]
-#cars_test = cars[NTRAIN:len(cars)]
+    #Split into training and test data
+        #The original dataset is sorted by the value of the first column, so we
+        # need to shuffle the order of the rows of the array or else our training
+        # data will only contain specific values of one variable
+    cars = cars.reindex(np.random.permutation(cars.index))
+    train_max_row = int(math.floor(cars.shape[0] * TRAIN_PROP))
+    cars_train = cars.iloc[:train_max_row]
+    cars_test = cars.iloc[train_max_row:]
+    #np.random.shuffle(cars)
+    #cars_train = cars[0:NTRAIN]
+    #cars_test = cars[NTRAIN:len(cars)]
+
+if DATASET == 'income':
+    # read in data
+    income = pd.read_csv("income.csv")
+
+    COLNAMES = list(income.columns.values)    #Save column names to a list   
+
+    # convert categorical variable to numerical variable
+    for col in COLNAMES:
+        income[col] = pd.Categorical(income[col]).codes
+    COLNAMES.remove('y')
+
+    #  shuffle, split into training and testing set
+    income = income.reindex(np.random.permutation(income.index)).iloc[:1700,:]
+    train_max_row = int(math.floor(income.shape[0] * TRAIN_PROP))
+    income_train = income.iloc[:train_max_row]
+    income_test = income.iloc[train_max_row:]
+
+    #Lazy assignment to not have to rewrite everything else
+    cars_train = income_train
+    cars_test = income_test
 
 def generate_tree(bag):
     global NSTATE
@@ -81,12 +103,6 @@ def generate_tree(bag):
                                      splitter = 'random', max_features = 'auto')
     tree.fit(bag[COLNAMES], bag["y"])
     return tree
-
-
-def predict(data):
-    global COLNAMES
-    prediction = tree.predict(data[COLNAMES])
-
 
 
 def calc_entropy(column):
@@ -171,11 +187,19 @@ def check_prediction(y, predicted_y):
 #Run the model
 def grow_forest(train_data,test_data,NTREES,bias_checking):
     global COLNAMES
+    global DATASET
 
-    if bias_checking:
-        votes = np.zeros((len(train_data),4))
-    if not bias_checking:
-        votes = np.zeros((len(test_data),4))
+    if DATASET == 'cars':
+        if bias_checking:
+            votes = np.zeros((len(train_data),4))
+        if not bias_checking:
+            votes = np.zeros((len(test_data),4))
+
+    if DATASET == 'income':
+        if bias_checking:
+            votes = np.zeros((len(train_data),2))
+        if not bias_checking:
+            votes = np.zeros((len(test_data),2))
 
     for i in range(NTREES):
     # We select BAG_PROP of the rows from train, sampling with replacement
@@ -196,26 +220,36 @@ def grow_forest(train_data,test_data,NTREES,bias_checking):
             probabilities = tree.predict_proba(train_data[COLNAMES])
             prob1 = probabilities[:,0]
             prob2 = probabilities[:,1]
-            prob3 = probabilities[:,2]
-            prob4 = probabilities[:,3]
-            for j in range(0,len(votes)):
-                row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
-                votes[j,np.argmax(row_probs)] += 1
+            if DATASET == 'cars':
+                prob3 = probabilities[:,2]
+                prob4 = probabilities[:,3]
+                for j in range(0,len(votes)):
+                    row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
+                    votes[j,np.argmax(row_probs)] += 1
+            if DATASET == 'income':
+                for j in range(0,len(votes)):
+                    row_probs = (prob1[j],prob2[j])
+                    votes[j,np.argmax(row_probs)] += 1
 
         if not bias_checking:
             # Using the model, make predictions on the test data
             probabilities = tree.predict_proba(test_data[COLNAMES])
             prob1 = probabilities[:,0]
             prob2 = probabilities[:,1]
-            prob3 = probabilities[:,2]
-            prob4 = probabilities[:,3]
-            for j in range(0,len(votes)):
-                row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
-                votes[j,np.argmax(row_probs)] += 1
+            if DATASET == 'cars':
+                prob3 = probabilities[:,2]
+                prob4 = probabilities[:,3]
+                for j in range(0,len(votes)):
+                    row_probs = (prob1[j],prob2[j],prob3[j],prob4[j])
+                    votes[j,np.argmax(row_probs)] += 1
+            if DATASET == 'income':
+                for j in range(0,len(votes)):
+                    row_probs = (prob1[j],prob2[j])
+                    votes[j,np.argmax(row_probs)] += 1
 
     predicted_y = []
     for i in range(0,len(votes)):
-        predicted_y.append(np.argmax(votes[i]) + 1)
+        predicted_y.append(np.argmax(votes[i]))
 
     if bias_checking:
         return (predicted_y,sample_list,unsampled_list)
@@ -224,13 +258,12 @@ def grow_forest(train_data,test_data,NTREES,bias_checking):
 
 def correct_bias(predicted_y,sample_list,unsampled_list,train_data):
     accurate = check_prediction(train_data['y'],predicted_y)
-
     return accurate
 
 if BIAS_CHECKING:
     (predicted_y,sample_list,unsampled_list) = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
     accurate = correct_bias(predicted_y,unsampled_list,sample_list,cars_train)
-    print accurate
+    print(sum(accurate)[0]/float(len(accurate)))
 
 if not BIAS_CHECKING:
     predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
