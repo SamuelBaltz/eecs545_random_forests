@@ -13,10 +13,14 @@ NSTATE = 1
 DEPTH = 5
 NLEAF = 2
 NTREES = 100
-BAG_PROP = .6
+BAG_PROP = .7
 NCORRECTS = 3
 BIAS_CHECKING = False
-DATASET = 'cars'
+DATASET = 'income'
+
+if BIAS_CHECKING and DATASET == 'cars':
+    print("\n \n WARNING: cannot bias check on categorical variable \n \n")
+    BREAK
 
 #set the random seed
 np.random.seed(SEED)
@@ -173,19 +177,8 @@ def sample_with_replacement(data,i,bias_checking):
     if bias_checking:
         return(bag,sample_indices)
 
-def check_prediction(y, predicted_y):
-    """
-    Check the accuracy of a predicted y column against the real y values
-    """
-    accurate = np.zeros((len(y),1))
-    y_array = np.array(y)
-    for i in range(len(accurate)):
-        if predicted_y[i] == y_array[i]:
-            accurate[i] = 1
-    return accurate
-
 #Run the model
-def grow_forest(train_data,test_data,NTREES,bias_checking):
+def grow_forest(train_data,test_data,NTREES,bias_checking,is_b,estimated_bias):
     global COLNAMES
     global DATASET
 
@@ -211,9 +204,13 @@ def grow_forest(train_data,test_data,NTREES,bias_checking):
             (bag,sample_list) = sample_with_replacement(train_data,i,bias_checking)
             unsampled_list = np.setdiff1d(train_data.index,sample_list)
         
-        # Fit a decision tree model to the "bag"
-        tree = generate_tree(bag)
-        tree.fit(bag[COLNAMES], bag["y"])
+        if not is_b:
+            # Fit a decision tree model to the "bag"
+            tree = generate_tree(bag)
+            tree.fit(bag[COLNAMES], bag["y"])
+        if is_b:
+            tree = generate_tree(train_data)
+            tree.fit(train_data[COLNAMES],estimated_bias)
 
         if bias_checking:
             # Using the model, make predictions on the training data
@@ -256,17 +253,41 @@ def grow_forest(train_data,test_data,NTREES,bias_checking):
     if not bias_checking:
         return predicted_y
 
+def check_prediction(y, predicted_y):
+    """
+    Check the accuracy of a predicted y column against the real y values
+    """
+    global BIAS_CHECKING
+    accurate = np.zeros((len(y),1))
+    estimated_bias = np.zeros((len(y),1))
+    y_array = np.array(y)
+    for i in range(len(accurate)):
+        if predicted_y[i] == y_array[i]:
+            accurate[i] = 1
+        estimated_bias[i] = predicted_y[i] - y_array[i]
+    if BIAS_CHECKING:
+        return (accurate,estimated_bias)
+    else:
+        return accurate
+
 def correct_bias(predicted_y,sample_list,unsampled_list,train_data):
-    accurate = check_prediction(train_data['y'],predicted_y)
-    return accurate
+    (accurate,estimated_bias) = check_prediction(train_data['y'],predicted_y)
+    #Grow another RF with training data and response variable of estimated_bias
+    (b_predicted_y,b_sample_list,b_unsampled_list) = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING,True,estimated_bias)
+    #Recover the accuracy and bias of the new random forest
+    (b_accurate,b_estimated_bias) = check_prediction(train_data['y'],b_predicted_y)
+    corrected_y = predicted_y[0] - b_estimated_bias + 1
+    (b_accurate,null) = check_prediction(train_data['y'],corrected_y)
+    #oob_error = sum(accurate)[0]/float(len(accurate))
+    return (b_accurate)
 
 if BIAS_CHECKING:
-    (predicted_y,sample_list,unsampled_list) = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+    (predicted_y,sample_list,unsampled_list) = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING,False,-999)
     accurate = correct_bias(predicted_y,unsampled_list,sample_list,cars_train)
     print(sum(accurate)[0]/float(len(accurate)))
 
 if not BIAS_CHECKING:
-    predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING)
+    predicted_y = grow_forest(cars_train,cars_test,NTREES,BIAS_CHECKING,False,-999)
     print(float(sum(check_prediction(cars_test['y'],predicted_y))) / float(len(cars_test)))
 
 
