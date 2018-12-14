@@ -300,7 +300,7 @@ for bag_prop in bag_props:
                 print("accurate: " + accuracy_rate)
             
             f = open("data_to_plot.csv", "a+")
-            f.write(str(accuracy_rate) + ',' + str(bag_prop) + ',' + str(train_prop) + ',' + str(bias_on_off) + ',' + str(DATASET) + '\n')
+            f.write('\n' + str(accuracy_rate) + ',' + str(bag_prop) + ',' + str(train_prop) + ',' + str(bias_on_off) + ',' + str(DATASET))
             f.close()
 
 
